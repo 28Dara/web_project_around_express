@@ -14,6 +14,7 @@
     "url": "git+https://github.com/28Dara/web_project_around_express.git"
   },
   "keywords": [],
+  "author": "Dara",
   "type": "module",
   "bugs": {
     "url": "https://github.com/28Dara/web_project_around_express/issues"
