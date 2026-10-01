@@ -1,8 +1,9 @@
 import type { RequestHandler } from 'express';
+import { readDataFile } from '../reader.js';
 
-const getCards: RequestHandler = (req, res) => {
-  const tag = req.query.tag;
-  res.send(`Etiqueta: ${tag}`);
+const getCards: RequestHandler = async (req, res) => {
+  const cards = await readDataFile('cards.json');
+  res.json(cards);
 };
 
 export { getCards };

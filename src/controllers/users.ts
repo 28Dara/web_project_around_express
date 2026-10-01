@@ -1,12 +1,28 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { RequestHandler } from 'express';
+import { readDataFile } from '../reader.js';
 
-const usersPath = path.join(import.meta.dirname, '../../data/users.json');
+interface User {
+  _id: string;
+  name: string;
+  about: string;
+  avatar: string;
+}
 
 const getUsers: RequestHandler = async (req, res) => {
-  const data = await fs.readFile(usersPath, 'utf-8');
-  res.json(JSON.parse(data));
+  const users = await readDataFile('users.json');
+  res.json(users);
 };
 
-export { getUsers };
+const getUserById: RequestHandler = async (req, res) => {
+  const users: User[] = await readDataFile('users.json');
+  const user = users.find((savedUser) => savedUser._id === req.params.userId);
+
+  if (!user) {
+    res.status(404).json({ message: 'ID de usuario no encontrado' });
+    return;
+  }
+
+  res.json(user);
+};
+
+export { getUsers, getUserById };
