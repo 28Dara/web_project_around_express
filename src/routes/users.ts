@@ -1,16 +1,9 @@
-import express from 'express';
-import router from './routes/index.js';
+import { Router } from 'express';
+import { getUsers, getUserById } from '../controllers/users.js';
 
-const app = express();
+const usersRouter = Router();
 
-app.use(router);
+usersRouter.get('/', getUsers);
+usersRouter.get('/:userId', getUserById);
 
-app.use((req, res) => {
-  res.status(404).json({ message: 'Recurso solicitado no encontrado' });
-});
-
-const PORT = 3000;
-
-app.listen(PORT, () => {
-  console.log(`El servidor está corriendo en http://localhost:${PORT}`);
-});
+export { usersRouter };
