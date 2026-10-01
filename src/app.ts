@@ -4,6 +4,7 @@ import type { ErrorRequestHandler } from 'express';
 
 const app = express();
 
+app.use(express.json());
 app.use(router);
 
 app.use((req, res) => {
