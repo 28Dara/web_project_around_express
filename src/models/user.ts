@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema<UserData>({
   },
 });
 
-const User = mongoose.model<UserData>('User', userSchema);
+const User = mongoose.model('User', userSchema);
 
 export { urlRegex };
 export default User;
