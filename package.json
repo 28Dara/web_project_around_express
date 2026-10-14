@@ -21,7 +21,8 @@
   },
   "homepage": "https://github.com/28Dara/web_project_around_express#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongoose": "^9.11.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

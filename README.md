@@ -1,97 +1,103 @@
-# Around The U.S. — API REST con Express
+# Around The U.S. — API REST con Express y MongoDB
 
 ## Descripción
 
-Servidor back end para el proyecto "Alrededor de los EE. UU.", construido con **Node.js**, **Express** y **TypeScript**. Es la primera etapa de la API propia que reemplazará al servidor externo usado en el curso de front end, desarrollada como parte del programa de desarrollo web de TripleTen.
+Servidor back end para el proyecto "Alrededor de los EE. UU.", construido con **Node.js**, **Express** y **TypeScript**, y conectado a una base de datos **MongoDB** mediante **Mongoose**. Gestiona usuarios y tarjetas de fotos: crear, consultar, actualizar, borrar y dar o quitar "me gusta". Se desarrolla como parte del programa de desarrollo web de TripleTen.
 
-Por ahora el servidor lee sus datos desde archivos JSON locales (`users.json` y `cards.json`) y los devuelve mediante rutas REST. Es una solución temporal hasta integrar una base de datos en el siguiente sprint.
-
-## Tecnologías
+## Tecnologías y técnicas
 
 - Node.js con Módulos ES (`"type": "module"`)
-- Express 5
-- TypeScript (compilación con `tsc`)
-- `tsx` para recarga automática en desarrollo (hot reload)
-- ESLint (`typescript-eslint`) y Prettier para calidad y formato del código
-- EditorConfig para mantener un estilo consistente entre editores
-- `node:fs/promises` y `node:path` para leer archivos de forma asíncrona
+- Express 5 (los errores de funciones `async` llegan solos al manejador de errores)
+- TypeScript con modo estricto y compilación con `tsc`
+- MongoDB y Mongoose: esquemas, modelos, validación de campos y validador personalizado con expresión regular para URLs
+- Operadores `$addToSet` y `$pull` para gestionar los "me gusta" sin duplicados
+- Middleware centralizado de manejo de errores y errores con código de estado (`Object.assign`)
+- Middleware de autorización temporal (`req.user`) con extensión de tipos de TypeScript
+- `tsx` para recarga automática en desarrollo
+- ESLint (`typescript-eslint`), Prettier y EditorConfig
 
 ## Rutas disponibles
 
-| Método | Ruta             | Respuesta                         |
-| ------ | ---------------- | --------------------------------- |
-| GET    | `/users`         | Lista JSON de todos los usuarios  |
-| GET    | `/cards`         | Lista JSON de todas las tarjetas  |
-| GET    | `/users/:userId` | Datos JSON del usuario con ese ID |
+### Usuarios
+
+| Método | Ruta               | Qué hace                              |
+| ------ | ------------------ | ------------------------------------- |
+| GET    | `/users`           | Devuelve todos los usuarios           |
+| GET    | `/users/me`        | Devuelve el usuario actual            |
+| GET    | `/users/:id`       | Devuelve un usuario por su `_id`      |
+| POST   | `/users`           | Crea un usuario                       |
+| PATCH  | `/users/me`        | Actualiza el perfil (`name`, `about`) |
+| PATCH  | `/users/me/avatar` | Actualiza el avatar                   |
+
+### Tarjetas
+
+| Método | Ruta               | Qué hace                           |
+| ------ | ------------------ | ---------------------------------- |
+| GET    | `/cards`           | Devuelve todas las tarjetas        |
+| POST   | `/cards`           | Crea una tarjeta (`name`, `link`)  |
+| DELETE | `/cards/:id`       | Elimina una tarjeta                |
+| PUT    | `/cards/:id/likes` | Da "me gusta" a una tarjeta        |
+| DELETE | `/cards/:id/likes` | Quita el "me gusta" de una tarjeta |
+
+Todas las rutas que devuelven tarjetas incluyen el campo `isLiked`, calculado según el usuario actual.
 
 ### Respuestas de error
 
-| Estado | Cuándo ocurre                     | Respuesta                                              |
-| ------ | --------------------------------- | ------------------------------------------------------ |
-| 404    | El ID de usuario no existe        | `{ "message": "ID de usuario no encontrado" }`         |
-| 404    | La dirección solicitada no existe | `{ "message": "Recurso solicitado no encontrado" }`    |
-| 500    | Error inesperado del servidor     | `{ "message": "Ha ocurrido un error en el servidor" }` |
+| Estado | Cuándo ocurre                                                |
+| ------ | ------------------------------------------------------------ |
+| 400    | Datos inválidos o `_id` con formato incorrecto               |
+| 404    | El usuario o la tarjeta no existen, o la dirección no existe |
+| 500    | Error inesperado: `"Ha ocurrido un error en el servidor"`    |
 
-## Scripts
+Todas las respuestas de error tienen la forma `{ "message": "..." }`.
+
+## Requisitos y scripts
+
+Se necesita tener MongoDB en ejecución en `mongodb://127.0.0.1:27017/aroundb`.
 
 | Comando         | Qué hace                                              |
 | --------------- | ----------------------------------------------------- |
 | `npm run dev`   | Inicia el servidor en `localhost:3000` con hot reload |
-| `npm run build` | Compila el código de `src/` a JavaScript en `dist/`   |
-| `npm run start` | Inicia la versión compilada del servidor              |
+| `npm run build` | Compila `src/` a JavaScript en `dist/`                |
+| `npm run start` | Inicia la versión compilada                           |
 | `npm run lint`  | Revisa el código con ESLint                           |
 
 ## Arquitectura
 
-El proyecto usa un enfoque modular: cada carpeta tiene una única responsabilidad.
-
-| Archivo / carpeta  | Responsabilidad                                                                             |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `src/app.ts`       | Punto de entrada: crea el servidor, conecta las rutas y define los manejadores de 404 y 500 |
-| `src/routes/`      | Define qué URL existe y qué controlador la atiende                                          |
-| `src/controllers/` | Contiene la lógica de cada ruta (buscar datos y responder)                                  |
-| `src/reader.ts`    | Lee y convierte a objeto los archivos JSON de `data/`                                       |
-| `data/`            | Archivos de datos temporales (`users.json`, `cards.json`)                                   |
-
-El orden de los middlewares en `app.ts` es importante: primero el router, después el manejador de 404 y al final el manejador de errores 500.
-
-### Estructura de carpetas
-
 ```
 web_project_around_express/
-├── data/
-│   ├── cards.json
-│   └── users.json
 ├── src/
 │   ├── controllers/
 │   │   ├── cards.ts
 │   │   └── users.ts
+│   ├── middleware/
+│   │   └── error-handler.ts
+│   ├── models/
+│   │   ├── card.ts
+│   │   └── user.ts
 │   ├── routes/
 │   │   ├── cards.ts
 │   │   ├── index.ts
 │   │   └── users.ts
-│   ├── app.ts
-│   └── reader.ts
+│   ├── types/
+│   │   └── express/
+│   │       └── index.d.ts
+│   └── app.ts
 ├── .editorconfig
 ├── .gitignore
-├── .prettierrc
 ├── eslint.config.js
 ├── package.json
 └── tsconfig.json
 ```
 
-## Lo aprendido
+- **models:** definen cómo es un usuario o una tarjeta y validan los datos.
+- **controllers:** contienen la lógica de cada ruta.
+- **routes:** deciden qué URL llega a qué controlador.
+- **middleware:** manejo centralizado de errores.
 
-- Crear un servidor con Express y organizarlo en rutas y controladores
-- Construir rutas absolutas de forma segura con `import.meta.dirname` y `path.join()`
-- Leer archivos de forma asíncrona sin bloquear el servidor con `fs/promises`
-- Importancia del orden de los middlewares en Express
-- Cómo Express identifica un manejador de errores (4 parámetros) y cómo silenciar la regla de ESLint con `eslint-disable-next-line`
-- Configurar un entorno profesional: linter, formateador, EditorConfig y hot reload
+## Nota sobre la autorización
 
-## Estado del proyecto
-
-Las tres rutas del brief están implementadas y probadas, junto con las respuestas 404 y 500. El código pasa `npm run lint` sin errores y compila con `npm run build`.
+Por ahora un middleware temporal asigna siempre el mismo usuario a cada petición (`req.user`). Se reemplazará cuando se implemente la autenticación real.
 
 ## Autor
 
